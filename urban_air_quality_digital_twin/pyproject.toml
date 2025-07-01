@@ -1,0 +1,29 @@
+# File: urban_air_quality_digital_twin/pyproject.toml
+# Description: Python project configuration for Urban Air Quality Digital Twin
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "urban_air_quality_digital_twin"
+version = "0.1.0"
+description = "Urban Air Quality Digital Twin - Data Engineering and Backend"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "crewai>=0.20.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]",
+    "pandas>=2.0.0",
+    "requests>=2.28.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0.0",
+    "scikit-learn>=1.2.0",
+    "transformers>=4.38.0",
+    "matplotlib>=3.7.0",
+    "accelerate>=0.21.0"
+]
