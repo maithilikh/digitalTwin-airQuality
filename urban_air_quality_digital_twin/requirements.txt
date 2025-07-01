@@ -1,0 +1,14 @@
+# File: urban_air_quality_digital_twin/requirements.txt
+# Description: Python dependencies for Urban Air Quality Digital Twin
+
+crewai>=0.20.0
+fastapi>=0.100.0
+uvicorn[standard]
+pandas>=2.0.0
+requests>=2.28.0
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+scikit-learn>=1.2.0
+transformers>=4.38.0
+matplotlib>=3.7.0
+accelerate>=0.21.0
