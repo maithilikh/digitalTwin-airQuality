@@ -17,3 +17,4 @@ agents:
       The Predictor agent leverages machine learning and LLMs to forecast air quality and answer 'what-if' scenario queries, supporting urban planning and public health decisions.
     tools:
       - prediction
+      - reasoning

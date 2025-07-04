@@ -1,0 +1,17 @@
+{
+  "rush_hour": {
+    "pm2_5": 0.3,
+    "pm10": 0.25,
+    "nitrogen_dioxide": 0.4
+  },
+  "rainy_day": {
+    "pm2_5": -0.1,
+    "pm10": -0.15,
+    "nitrogen_dioxide": -0.2
+  },
+  "green_initiative": {
+    "pm2_5": -0.2,
+    "pm10": -0.15,
+    "nitrogen_dioxide": -0.25
+  }
+}

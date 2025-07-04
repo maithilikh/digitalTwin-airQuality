@@ -11,6 +11,7 @@ from crewai import Agent, Task, Crew, Process
 from urban_air_quality_digital_twin.tools.data_fetcher import main as fetch_data_main
 from urban_air_quality_digital_twin.tools.preprocess import clean_and_preprocess
 from urban_air_quality_digital_twin.tools.prediction import main as prediction_main
+from urban_air_quality_digital_twin.tools.reasoning import reason_about_pollution
 
 CONFIG_DIR = os.path.join(os.path.dirname(__file__), 'config')
 AGENTS_PATH = os.path.join(CONFIG_DIR, 'agents.yaml')
@@ -38,6 +39,13 @@ def preprocess_tool(*args, **kwargs):
 def prediction_tool(*args, **kwargs):
     prediction_main()
     return "Prediction, scenario analysis, and visualization complete."
+
+def reasoning_tool(*args, **kwargs):
+    city = kwargs.get("city", "Unknown")
+    insights = kwargs.get("insights", {})
+    return reason_about_pollution(city, insights)
+
+tool_map['reasoning'] = reasoning_tool
 
 # --- Map tool names to functions ---
 tool_map = {

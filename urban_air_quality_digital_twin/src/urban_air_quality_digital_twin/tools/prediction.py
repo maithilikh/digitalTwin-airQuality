@@ -10,6 +10,9 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
+from transformers import pipeline 
+import json  
+from urban_air_quality_digital_twin.shared.memory import agent_messages
 
 # Directories
 PROCESSED_DATA_DIR = os.path.join(os.path.dirname(__file__), '../../../data/processed')
@@ -21,6 +24,18 @@ load_dotenv()
 
 # Ensure plots directory exists
 os.makedirs(PLOTS_DIR, exist_ok=True)
+
+# Load scenario profiles
+SCENARIO_PROFILE_PATH = os.path.join(os.path.dirname(__file__), '../config/scenario_profiles.json')
+try:
+    with open(SCENARIO_PROFILE_PATH) as f:
+        SCENARIO_PROFILES = json.load(f)
+except Exception as e:
+    print(f"Failed to load scenario profiles: {e}")
+    SCENARIO_PROFILES = {}
+
+# Load the free Flan-T5-small model
+llm = pipeline("text2text-generation", model="google/flan-t5-small")
 
 # --- Pattern Detection and Insight Generation ---
 def detect_patterns_and_generate_insights(df, city):
@@ -72,19 +87,61 @@ def forecast_next_24h(df, target_col):
     y_pred = np.clip(y_pred, 0, 1)
     return y_pred.tolist()
 
+#--- LLM-Based Interpretation ---
+def interpret_scenario(scenario_desc):
+    scenario_key = scenario_desc.strip().lower().replace(" ", "_")
+
+    if scenario_key in SCENARIO_PROFILES:
+        return SCENARIO_PROFILES[scenario_key]
+    
+    prompt = (
+        f"Given the scenario: '{scenario_desc}', which pollutants (pm2_5, pm10, nitrogen_dioxide) "
+        f"will be affected and by how much? Return a JSON dict like "
+        f"{{'pm2_5': -0.2, 'pm10': -0.15, 'nitrogen_dioxide': -0.1}}."
+    )
+    print("LLM Prompt:", prompt)
+    output = llm(prompt, max_length=100)[0]['generated_text']
+    print("LLM Output:", output)
+
+    try:
+        # Replace single quotes with double quotes and parse as JSON
+        parsed = json.loads(output.replace("'", '"'))
+        return parsed
+    except Exception as e:
+        print(f"⚠️ Failed to parse LLM output: {e}")
+        return {'pm2_5': -0.1, 'pm10': -0.1, 'nitrogen_dioxide': -0.1}
+
+
 # --- Scenario Simulation ---
 def simulate_what_if(df, target_col, scenario_desc):
-    y = df[target_col].values[-48:]
-    if len(y) < 2:
-        return [float(np.mean(y))] * 24
-    if "traffic" in scenario_desc.lower() and target_col in ["pm2_5", "pm10", "nitrogen_dioxide"]:
-        y = y * 0.8  # Simulate 20% reduction
+    # y = df[target_col].values[-48:]
+    # if len(y) < 2:
+    #     return [float(np.mean(y))] * 24
+    # if "traffic" in scenario_desc.lower() and target_col in ["pm2_5", "pm10", "nitrogen_dioxide"]:
+    #     y = y * 0.8  # Simulate 20% reduction
+    # x = np.arange(len(y)).reshape(-1, 1)
+    # model = LinearRegression().fit(x, y)
+    # x_future = np.arange(len(y), len(y) + 24).reshape(-1, 1)
+    # y_pred = model.predict(x_future)
+    # y_pred = np.clip(y_pred, 0, 1)
+    # return y_pred.tolist()
+    
+    if len(df) < 48 or target_col not in df.columns:
+        return [float(np.mean(df[target_col]))] * 24
+
+    # Use the LLM to interpret scenario and get adjustment factor
+    modifiers = interpret_scenario(scenario_desc)
+    adjustment = modifiers.get(target_col, 0)
+
+    # Apply adjustment to the last 48 hours of data
+    y = df[target_col].values[-48:] * (1 + adjustment)
     x = np.arange(len(y)).reshape(-1, 1)
     model = LinearRegression().fit(x, y)
     x_future = np.arange(len(y), len(y) + 24).reshape(-1, 1)
     y_pred = model.predict(x_future)
     y_pred = np.clip(y_pred, 0, 1)
     return y_pred.tolist()
+
 
 # --- Main Execution ---
 def main():
@@ -106,6 +163,8 @@ def main():
 
         # Detect patterns and generate insights
         insights = detect_patterns_and_generate_insights(df, city)
+        agent_messages[f"{city}_insight"] = insights
+
         print(f"Insights for {city}: {insights}")
 
         # Generate trend visualizations
