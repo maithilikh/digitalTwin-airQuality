@@ -24,6 +24,7 @@ import {
   Send,
   Map
 } from 'lucide-react';
+import MapView, { MapData } from './MapView';
 
 // Mock data - in production, this would come from your API
 const mockCityData = {
@@ -83,20 +84,6 @@ const mockCityData = {
   }
 };
 
-// Mock map locations with AQI data
-const mapLocations = [
-  { id: 1, name: 'Central Park, NYC', lat: 40.7829, lng: -73.9654, aqi: 76 },
-  { id: 2, name: 'Times Square, NYC', lat: 40.7580, lng: -73.9855, aqi: 82 },
-  { id: 3, name: 'Brooklyn Bridge, NYC', lat: 40.7061, lng: -73.9969, aqi: 71 },
-  { id: 4, name: 'Downtown LA', lat: 34.0522, lng: -118.2437, aqi: 134 },
-  { id: 5, name: 'Santa Monica, LA', lat: 34.0195, lng: -118.4912, aqi: 128 },
-  { id: 6, name: 'Millennium Park, Chicago', lat: 41.8826, lng: -87.6226, aqi: 58 },
-  { id: 7, name: 'Navy Pier, Chicago', lat: 41.8917, lng: -87.6086, aqi: 62 },
-  { id: 8, name: 'South Beach, Miami', lat: 25.7907, lng: -80.1300, aqi: 42 },
-  { id: 9, name: 'Pike Place Market, Seattle', lat: 47.6097, lng: -122.3331, aqi: 35 },
-  { id: 10, name: 'Downtown Denver', lat: 39.7392, lng: -104.9903, aqi: 89 }
-];
-
 const getAQIColor = (aqi: number) => {
   if (aqi <= 50) return 'text-green-500 bg-green-50 border-green-200';
   if (aqi <= 100) return 'text-yellow-500 bg-yellow-50 border-yellow-200';
@@ -145,7 +132,7 @@ const Dashboard: React.FC = () => {
   const [selectedCity, setSelectedCity] = useState('New York');
   const [compareCity1, setCompareCity1] = useState('New York');
   const [compareCity2, setCompareCity2] = useState('Los Angeles');
-  const [selectedMapLocation, setSelectedMapLocation] = useState<any>(null);
+  const [markerData, setMarkerData] = useState<MapData | null>(null);
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -160,8 +147,31 @@ const Dashboard: React.FC = () => {
   const city1Data = mockCityData[compareCity1 as keyof typeof mockCityData];
   const city2Data = mockCityData[compareCity2 as keyof typeof mockCityData];
 
-  const handleMapLocationClick = (location: any) => {
-    setSelectedMapLocation(location);
+  // Handler for map click
+  const handleMapClick = async (lat: number, lng: number) => {
+    setMarkerData(null); // Clear previous marker while loading
+    try {
+      const res = await fetch(`/api/get-city-data?lat=${lat}&lng=${lng}`);
+      if (!res.ok) throw new Error('Failed to fetch city data');
+      const data = await res.json();
+      setMarkerData({
+        lat,
+        lng,
+        city: data.city,
+        aqi: data.aqi,
+        weather: data.weather,
+        category: data.category,
+      });
+    } catch (err) {
+      setMarkerData({
+        lat,
+        lng,
+        city: 'Unknown',
+        aqi: 0,
+        weather: 'Unknown',
+        category: 'Good',
+      });
+    }
   };
 
   const handleAiQuery = async () => {
@@ -181,7 +191,7 @@ const Dashboard: React.FC = () => {
       selectedCity,
       currentData: currentCityData,
       comparison: { city1: compareCity1, city2: compareCity2, data1: city1Data, data2: city2Data },
-      mapLocation: selectedMapLocation
+      mapLocation: markerData
     };
     
     const dataStr = JSON.stringify(exportData, null, 2);
@@ -433,84 +443,7 @@ const Dashboard: React.FC = () => {
             <Map className="w-5 h-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-900">City AQI Map</h3>
           </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Interactive Map Area */}
-            <div className="lg:col-span-2">
-              <div className="relative bg-gradient-to-br from-blue-100 to-green-100 rounded-lg h-96 overflow-hidden">
-                {/* Simulated map with clickable locations */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-200/30 to-green-200/30">
-                  {mapLocations.map((location) => (
-                    <button
-                      key={location.id}
-                      onClick={() => handleMapLocationClick(location)}
-                      className={`absolute w-4 h-4 rounded-full border-2 border-white shadow-lg transition-all duration-200 hover:scale-125 ${getAQIColor(location.aqi).split(' ')[0]} ${getAQIColor(location.aqi).split(' ')[1]}`}
-                      style={{
-                        left: `${((location.lng + 125) / 55) * 100}%`,
-                        top: `${((50 - location.lat) / 25) * 100}%`
-                      }}
-                      title={`${location.name}: AQI ${location.aqi}`}
-                    />
-                  ))}
-                </div>
-                
-                {/* Map overlay with city labels */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-4 left-4 text-xs font-medium text-gray-700 bg-white/80 px-2 py-1 rounded">
-                    Click on markers to view location data
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Location Details */}
-            <div className="space-y-4">
-              {selectedMapLocation ? (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-3">{selectedMapLocation.name}</h4>
-                  <div className={`p-3 rounded-lg border ${getAQIColor(selectedMapLocation.aqi)}`}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      {getAQIIcon(selectedMapLocation.aqi)}
-                      <span className="text-sm font-medium">AQI: {selectedMapLocation.aqi}</span>
-                    </div>
-                    <div className="text-sm opacity-75">{getAQIStatus(selectedMapLocation.aqi)}</div>
-                  </div>
-                  <div className="mt-3 text-sm text-gray-600">
-                    <p>Lat: {selectedMapLocation.lat}</p>
-                    <p>Lng: {selectedMapLocation.lng}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 bg-gray-50 rounded-lg text-center">
-                  <Map className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Click on a location marker to view details</p>
-                </div>
-              )}
-              
-              {/* Legend */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">AQI Legend</h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span>Good (0-50)</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span>Moderate (51-100)</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span>Unhealthy for Sensitive (101-150)</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span>Unhealthy (151-200)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MapView markerData={markerData} onMapClick={handleMapClick} />
         </div>
 
         {/* Multi-City Comparison */}
