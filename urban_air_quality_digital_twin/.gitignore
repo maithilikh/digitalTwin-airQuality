@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+frontend/node_modules
+
 # C extensions
 *.so
 
@@ -58,6 +61,7 @@ coverage.xml
 .vscode/
 
 # Data
+backend/data
 /data/raw/
 /data/processed/
 urban_air_quality_digital_twin/data/raw/
