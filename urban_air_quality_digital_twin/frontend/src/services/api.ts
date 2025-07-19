@@ -105,7 +105,7 @@ class ApiService {
     return this.request(
       `/city/${encodeURIComponent(
         city
-      )}/historical?pollutant=${pollutant}&range=${range}`
+      )}/historical?pollutant=${pollutant}&time_range=${range}`
     );
   }
 

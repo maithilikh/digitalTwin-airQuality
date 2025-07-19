@@ -26,12 +26,9 @@ const Analysis: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AnalysisTab>("forecast");
   const [forecastTimeRange, setForecastTimeRange] = useState("24h");
   const [historicalDateRange, setHistoricalDateRange] = useState("7d");
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState("Mumbai");
   const [selectedPollutant, setSelectedPollutant] = useState("pm25");
   const [isLoading, setIsLoading] = useState(false);
-  const [cities, setCities] = useState<string[]>([]);
-  const [forecastData, setForecastData] = useState<any>(null);
-  const [historicalData, setHistoricalData] = useState<any>(null);
 
   const [scenarioParams, setScenarioParams] = useState({
     traffic: 50,
@@ -43,63 +40,14 @@ const Analysis: React.FC = () => {
     useState(scenarioParams);
   const [scenarioAnalysisTrigger, setScenarioAnalysisTrigger] = useState(0);
 
-  useEffect(() => {
-    loadCities();
-  }, []);
+  const [forecastData, setForecastData] = useState<any>(null);
+  const [historicalData, setHistoricalData] = useState<any>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [historicalLoading, setHistoricalLoading] = useState(false);
 
-  useEffect(() => {
-    if (selectedCity) {
-      loadData();
-    }
-  }, [
-    selectedCity,
-    forecastTimeRange,
-    historicalDateRange,
-    selectedPollutant,
-    activeTab,
-  ]);
-
-  const loadCities = async () => {
-    try {
-      const response = await apiService.getCities();
-      if (response.data && response.data.length > 0) {
-        setCities(response.data);
-        setSelectedCity(response.data[0]);
-      }
-    } catch (err) {
-      console.error("Failed to load cities:", err);
-    }
-  };
-
-  const loadData = async () => {
-    if (!selectedCity) return;
-
-    setIsLoading(true);
-    try {
-      if (activeTab === "forecast") {
-        const response = await apiService.getCityForecast(
-          selectedCity,
-          forecastTimeRange
-        );
-        if (response.data) {
-          setForecastData(response.data);
-        }
-      } else if (activeTab === "historical") {
-        const response = await apiService.getHistoricalData(
-          selectedCity,
-          selectedPollutant,
-          historicalDateRange
-        );
-        if (response.data) {
-          setHistoricalData(response.data);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // 1. Add state for scenario API result and loading
+  const [scenarioResult, setScenarioResult] = useState<any>(null);
+  const [scenarioLoading, setScenarioLoading] = useState(false);
 
   const handleTabChange = (tab: AnalysisTab) => {
     setActiveTab(tab);
@@ -110,23 +58,41 @@ const Analysis: React.FC = () => {
   const handleScenarioChange = (params: typeof scenarioParams) => {
     setScenarioParams(params);
   };
-
-  const handleAnalyzeScenario = async () => {
-    setAnalyzedScenarioParams(scenarioParams);
-    setScenarioAnalysisTrigger((t) => t + 1);
-
-    try {
-      const response = await apiService.analyzeScenario(
-        selectedCity,
-        scenarioParams
-      );
-      if (response.data) {
-        console.log("Scenario analysis result:", response.data);
-      }
-    } catch (err) {
-      console.error("Failed to analyze scenario:", err);
-    }
+  const handleAnalyzeScenario = () => {
+    setScenarioLoading(true);
+    apiService
+      .analyzeScenario(selectedCity, scenarioParams)
+      .then((res) => {
+        setScenarioResult(res.data || null);
+        setAnalyzedScenarioParams(scenarioParams);
+        setScenarioAnalysisTrigger((t) => t + 1);
+      })
+      .finally(() => setScenarioLoading(false));
   };
+
+  useEffect(() => {
+    if (activeTab === "forecast") {
+      setForecastLoading(true);
+      apiService
+        .getCityForecast(selectedCity, forecastTimeRange)
+        .then((res) => {
+          setForecastData(res.data?.forecast || []);
+        })
+        .finally(() => setForecastLoading(false));
+    }
+  }, [activeTab, selectedCity, forecastTimeRange]);
+
+  useEffect(() => {
+    if (activeTab === "historical") {
+      setHistoricalLoading(true);
+      apiService
+        .getHistoricalData(selectedCity, selectedPollutant, historicalDateRange)
+        .then((res) => {
+          setHistoricalData(res.data || {});
+        })
+        .finally(() => setHistoricalLoading(false));
+    }
+  }, [activeTab, selectedCity, selectedPollutant, historicalDateRange]);
 
   const tabs = [
     { id: "forecast", label: "Forecast & Predictions", icon: TrendingUp },
@@ -146,6 +112,7 @@ const Analysis: React.FC = () => {
     { value: "90d", label: "Last 3 Months" },
   ];
 
+  const cities = ["Mumbai", "Delhi", "Bangalore", "Chennai", "Kolkata"];
   const pollutants = [
     { value: "pm25", label: "PM2.5" },
     { value: "pm10", label: "PM10" },
@@ -171,7 +138,6 @@ const Analysis: React.FC = () => {
             Back to Dashboard
           </button>
         </Link>
-
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="flex space-x-1 bg-white p-1 rounded-xl shadow-sm">
@@ -240,21 +206,21 @@ const Analysis: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="mb-6">
                     <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                      Air Quality Forecast
+                      Air Quality Forecast for {selectedCity}
                     </h2>
                     <p className="text-gray-600">
                       Predicted AQI values with confidence intervals
                     </p>
                   </div>
-                  {forecastData ? (
+                  {forecastLoading ? (
+                    <div className="text-center text-gray-500">
+                      Loading forecast...
+                    </div>
+                  ) : (
                     <ForecastChart
                       data={forecastData}
                       timeRange={forecastTimeRange}
                     />
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No forecast data available
-                    </div>
                   )}
                 </div>
 
@@ -323,23 +289,23 @@ const Analysis: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="mb-6">
                     <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                      Historical Analysis
+                      Historical Trends
                     </h2>
                     <p className="text-gray-600">
-                      Historical trends and patterns for {selectedPollutant}
+                      Long-term air quality patterns and trends
                     </p>
                   </div>
-                  {historicalData ? (
+                  {historicalLoading ? (
+                    <div className="text-center text-gray-500">
+                      Loading historical data...
+                    </div>
+                  ) : (
                     <HistoricalChart
                       data={historicalData}
                       city={selectedCity}
                       pollutant={selectedPollutant}
                       dateRange={historicalDateRange}
                     />
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No historical data available
-                    </div>
                   )}
                 </div>
 
@@ -348,7 +314,11 @@ const Analysis: React.FC = () => {
                   type="pattern"
                   title="AI Pattern Analysis"
                   icon={Brain}
-                  context={{ city: selectedCity, pollutant: selectedPollutant }}
+                  context={{
+                    city: selectedCity,
+                    pollutant: selectedPollutant,
+                    dateRange: historicalDateRange,
+                  }}
                 />
               </div>
             )}
@@ -360,11 +330,10 @@ const Analysis: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-sm p-6">
                   <div className="mb-6">
                     <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                      Scenario Analysis
+                      Scenario Analysis for {selectedCity}
                     </h2>
                     <p className="text-gray-600">
-                      Simulate different conditions and their impact on air
-                      quality
+                      Adjust parameters to see how they affect air quality
                     </p>
                   </div>
                   <ScenarioSliders
@@ -373,7 +342,106 @@ const Analysis: React.FC = () => {
                     onAnalyze={handleAnalyzeScenario}
                   />
                 </div>
-
+                {/* Scenario Results */}
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Scenario Impact
+                    </h3>
+                    {scenarioLoading ? (
+                      <div className="text-center text-gray-500">
+                        Analyzing scenario...
+                      </div>
+                    ) : scenarioResult ? (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="bg-blue-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Car size={20} className="text-blue-500" />
+                              <span className="font-medium text-blue-900">
+                                Traffic
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-blue-900">
+                              {analyzedScenarioParams.traffic}%
+                            </p>
+                            <p className="text-sm text-blue-600">
+                              of normal levels
+                            </p>
+                          </div>
+                          <div className="bg-orange-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Factory size={20} className="text-orange-500" />
+                              <span className="font-medium text-orange-900">
+                                Industrial
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-orange-900">
+                              {analyzedScenarioParams.industrial}%
+                            </p>
+                            <p className="text-sm text-orange-600">
+                              of normal activity
+                            </p>
+                          </div>
+                          <div className="bg-green-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Cloud size={20} className="text-green-500" />
+                              <span className="font-medium text-green-900">
+                                Weather
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-green-900 capitalize">
+                              {analyzedScenarioParams.weather}
+                            </p>
+                            <p className="text-sm text-green-600">conditions</p>
+                          </div>
+                          <div className="bg-purple-50 rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Users size={20} className="text-purple-500" />
+                              <span className="font-medium text-purple-900">
+                                Population
+                              </span>
+                            </div>
+                            <p className="text-2xl font-bold text-purple-900">
+                              {analyzedScenarioParams.population}%
+                            </p>
+                            <p className="text-sm text-purple-600">density</p>
+                          </div>
+                        </div>
+                        {/* Show API impact results */}
+                        <div className="mt-6">
+                          <h4 className="font-semibold text-gray-800 mb-2">
+                            Projected Impact
+                          </h4>
+                          <ul className="list-disc pl-6 text-gray-700">
+                            <li>
+                              Overall AQI improvement:{" "}
+                              {scenarioResult.impact?.overall_improvement}%
+                            </li>
+                            <li>
+                              PM2.5 reduction:{" "}
+                              {scenarioResult.impact?.pm25_reduction}%
+                            </li>
+                            <li>
+                              Health risk reduction:{" "}
+                              {scenarioResult.impact?.health_risk}%
+                            </li>
+                          </ul>
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <strong>AI Analysis:</strong>
+                            <p className="mt-2 text-gray-700">
+                              {scenarioResult.ai_analysis}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-gray-500">
+                        Run a scenario analysis to see results.
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {/* LLM Scenario Analysis */}
                 <LLMAnalysis
                   type="scenario"

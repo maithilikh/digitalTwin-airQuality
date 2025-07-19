@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Car, Factory, Cloud, Users, Play } from 'lucide-react';
+import React, { useState } from "react";
+import { Car, Factory, Cloud, Users, Play } from "lucide-react";
 
 interface ScenarioParams {
   traffic: number;
@@ -14,10 +14,17 @@ interface ScenarioSlidersProps {
   onAnalyze?: () => void;
 }
 
-const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onAnalyze }) => {
+const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({
+  params,
+  onChange,
+  onAnalyze,
+}) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const handleSliderChange = (key: keyof ScenarioParams, value: number | string) => {
+  const handleSliderChange = (
+    key: keyof ScenarioParams,
+    value: number | string
+  ) => {
     const newParams = { ...params, [key]: value };
     onChange(newParams);
   };
@@ -29,23 +36,43 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
   };
 
   const weatherOptions = [
-    { value: 'sunny', label: 'Sunny', description: 'Clear skies, low humidity' },
-    { value: 'normal', label: 'Normal', description: 'Typical weather conditions' },
-    { value: 'rainy', label: 'Rainy', description: 'Precipitation, high humidity' },
-    { value: 'windy', label: 'Windy', description: 'Strong winds, good dispersal' },
-    { value: 'foggy', label: 'Foggy', description: 'Low visibility, poor dispersal' }
+    {
+      value: "sunny",
+      label: "Sunny",
+      description: "Clear skies, low humidity",
+    },
+    {
+      value: "normal",
+      label: "Normal",
+      description: "Typical weather conditions",
+    },
+    {
+      value: "rainy",
+      label: "Rainy",
+      description: "Precipitation, high humidity",
+    },
+    {
+      value: "windy",
+      label: "Windy",
+      description: "Strong winds, good dispersal",
+    },
+    {
+      value: "foggy",
+      label: "Foggy",
+      description: "Low visibility, poor dispersal",
+    },
   ];
 
   const getSliderColor = (value: number) => {
-    if (value <= 30) return 'bg-green-500';
-    if (value <= 60) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (value <= 30) return "bg-green-500";
+    if (value <= 60) return "bg-yellow-500";
+    return "bg-red-500";
   };
 
   const getSliderTrackColor = (value: number) => {
-    if (value <= 30) return 'bg-green-100';
-    if (value <= 60) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (value <= 30) return "bg-green-100";
+    if (value <= 60) return "bg-yellow-100";
+    return "bg-red-100";
   };
 
   return (
@@ -56,7 +83,9 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
           <Car className="text-blue-500" size={24} />
           <div>
             <h3 className="font-semibold text-gray-900">Traffic Reduction</h3>
-            <p className="text-sm text-gray-600">Reduce vehicle emissions by {params.traffic}%</p>
+            <p className="text-sm text-gray-600">
+              Reduce vehicle emissions by {params.traffic}%
+            </p>
           </div>
         </div>
         <div className="space-y-2">
@@ -66,9 +95,15 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
             <span>Maximum reduction</span>
           </div>
           <div className="relative">
-            <div className={`h-2 rounded-full ${getSliderTrackColor(params.traffic)}`}>
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${getSliderColor(params.traffic)}`}
+            <div
+              className={`h-2 rounded-full ${getSliderTrackColor(
+                params.traffic
+              )}`}
+            >
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${getSliderColor(
+                  params.traffic
+                )}`}
                 style={{ width: `${params.traffic}%` }}
               />
             </div>
@@ -77,7 +112,9 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
               min="0"
               max="100"
               value={params.traffic}
-              onChange={(e) => handleSliderChange('traffic', parseInt(e.target.value))}
+              onChange={(e) =>
+                handleSliderChange("traffic", parseInt(e.target.value))
+              }
               className="absolute top-0 left-0 w-full h-2 opacity-0 cursor-pointer"
             />
           </div>
@@ -90,7 +127,9 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
           <Factory className="text-orange-500" size={24} />
           <div>
             <h3 className="font-semibold text-gray-900">Industrial Activity</h3>
-            <p className="text-sm text-gray-600">Adjust industrial emissions to {params.industrial}%</p>
+            <p className="text-sm text-gray-600">
+              Adjust industrial emissions to {params.industrial}%
+            </p>
           </div>
         </div>
         <div className="space-y-2">
@@ -100,9 +139,15 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
             <span>Maximum</span>
           </div>
           <div className="relative">
-            <div className={`h-2 rounded-full ${getSliderTrackColor(params.industrial)}`}>
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${getSliderColor(params.industrial)}`}
+            <div
+              className={`h-2 rounded-full ${getSliderTrackColor(
+                params.industrial
+              )}`}
+            >
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${getSliderColor(
+                  params.industrial
+                )}`}
                 style={{ width: `${params.industrial}%` }}
               />
             </div>
@@ -111,7 +156,9 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
               min="0"
               max="100"
               value={params.industrial}
-              onChange={(e) => handleSliderChange('industrial', parseInt(e.target.value))}
+              onChange={(e) =>
+                handleSliderChange("industrial", parseInt(e.target.value))
+              }
               className="absolute top-0 left-0 w-full h-2 opacity-0 cursor-pointer"
             />
           </div>
@@ -124,7 +171,9 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
           <Users className="text-purple-500" size={24} />
           <div>
             <h3 className="font-semibold text-gray-900">Population Density</h3>
-            <p className="text-sm text-gray-600">Adjust population density to {params.population}%</p>
+            <p className="text-sm text-gray-600">
+              Adjust population density to {params.population}%
+            </p>
           </div>
         </div>
         <div className="space-y-2">
@@ -134,9 +183,15 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
             <span>High density</span>
           </div>
           <div className="relative">
-            <div className={`h-2 rounded-full ${getSliderTrackColor(params.population)}`}>
-              <div 
-                className={`h-2 rounded-full transition-all duration-300 ${getSliderColor(params.population)}`}
+            <div
+              className={`h-2 rounded-full ${getSliderTrackColor(
+                params.population
+              )}`}
+            >
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${getSliderColor(
+                  params.population
+                )}`}
                 style={{ width: `${params.population}%` }}
               />
             </div>
@@ -145,7 +200,9 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
               min="0"
               max="100"
               value={params.population}
-              onChange={(e) => handleSliderChange('population', parseInt(e.target.value))}
+              onChange={(e) =>
+                handleSliderChange("population", parseInt(e.target.value))
+              }
               className="absolute top-0 left-0 w-full h-2 opacity-0 cursor-pointer"
             />
           </div>
@@ -165,11 +222,11 @@ const ScenarioSliders: React.FC<ScenarioSlidersProps> = ({ params, onChange, onA
           {weatherOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => handleSliderChange('weather', option.value)}
+              onClick={() => handleSliderChange("weather", option.value)}
               className={`p-3 rounded-lg border-2 transition-all duration-200 text-left ${
                 params.weather === option.value
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
               }`}
             >
               <div className="font-medium text-gray-900">{option.label}</div>

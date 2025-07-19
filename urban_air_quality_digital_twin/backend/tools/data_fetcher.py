@@ -13,13 +13,11 @@ RAW_DATA_DIR = os.path.join(os.path.dirname(__file__), '../../../data/raw')
 load_dotenv()
 
 # OPEN_METEO_API_KEY = os.getenv('OPEN_METEO_API_KEY')
-CITY_LIST = os.getenv('CITY_LIST', 'London,Paris,New York').split(',')
+# Only use Indian cities by default
+CITY_LIST = os.getenv('CITY_LIST', 'Mumbai,Delhi,Bangalore,Chennai,Kolkata').split(',')
 FETCH_INTERVAL = int(os.getenv('DATA_FETCH_INTERVAL_MINUTES', '60'))
 
 CITY_COORDS = {
-    'London': {'lat': 51.5074, 'lon': -0.1278},
-    'Paris': {'lat': 48.8566, 'lon': 2.3522},
-    'New York': {'lat': 40.7128, 'lon': -74.0060},
     'Bangalore': {'lat': 12.9716, 'lon': 77.5946},
     'Mumbai': {'lat': 19.0760, 'lon': 72.8777},
     'Delhi': {'lat': 28.6139, 'lon': 77.2090},

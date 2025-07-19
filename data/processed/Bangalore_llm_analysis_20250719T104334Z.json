@@ -1,0 +1,14 @@
+{
+  "city": "Bangalore",
+  "timestamp": "20250719T104334Z",
+  "insights": {
+    "pm2_5": "6 high pm2_5 events in recent data.",
+    "pm2_5_trend": "Stable pm2_5 trend",
+    "pm10": "1 high pm10 events in recent data.",
+    "pm10_trend": "Stable pm10 trend",
+    "nitrogen_dioxide": "13 high nitrogen_dioxide events in recent data.",
+    "nitrogen_dioxide_trend": "Stable nitrogen_dioxide trend"
+  },
+  "llm_analysis": "LLM analysis not available",
+  "scenario_description": "What if traffic is reduced by 30%?"
+}

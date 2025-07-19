@@ -170,7 +170,8 @@ def main():
     print("Loading LLM for enhanced analysis...")
     llm_components = load_llm()
     
-    cities = os.getenv('CITY_LIST', 'London,Paris,New York').split(',')
+    # Only use Indian cities by default
+    cities = os.getenv('CITY_LIST', 'Mumbai,Delhi,Bangalore,Chennai,Kolkata').split(',')
     for city in map(str.strip, cities):
         city_files = [
             f for f in os.listdir(PROCESSED_DATA_DIR)

@@ -52,75 +52,122 @@ def get_cities() -> List[str]:
 
 @app.get("/api/city/{city}/current")
 def get_current_city_data(city: str) -> Dict[str, Any]:
-    file = get_latest_processed_file(city)
-    df = pd.read_csv(file)
-    latest = df.iloc[-1]
-    pollutants = {k: latest[k] for k in ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co'] if k in latest}
-    return {
-        "aqi": float(latest.get('aqi', 0)),
-        "temperature": float(latest.get('temperature', 0)),
-        "humidity": float(latest.get('humidity', 0)),
-        "windSpeed": float(latest.get('wind_speed', 0)),
-        "pollutants": pollutants,
-        "timestamp": latest.get('timestamp', None)
-    }
+    try:
+        file = get_latest_processed_file(city)
+    except HTTPException as e:
+        return {"error": str(e.detail)}, e.status_code
+    except Exception as e:
+        return {"error": str(e)}, 404
+    try:
+        df = pd.read_csv(file)
+        latest = df.iloc[-1]
+        pollutants = {k: latest[k] for k in ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co'] if k in latest}
+        return {
+            "aqi": float(latest.get('aqi', 0)),
+            "temperature": float(latest.get('temperature', 0)),
+            "humidity": float(latest.get('humidity', 0)),
+            "windSpeed": float(latest.get('wind_speed', 0)),
+            "pollutants": pollutants,
+            "timestamp": latest.get('timestamp', None)
+        }
+    except Exception as e:
+        return {"error": f"Failed to process current data: {e}"}, 500
 
 @app.get("/api/city/{city}/trend")
 def get_city_trend(city: str) -> Dict[str, List[float]]:
-    file = get_latest_processed_file(city)
-    df = pd.read_csv(file)
-    trend = df['aqi'].tail(24).tolist() if 'aqi' in df else []
-    return {"trend": trend}
+    try:
+        file = get_latest_processed_file(city)
+    except HTTPException as e:
+        return {"error": str(e.detail)}, e.status_code
+    except Exception as e:
+        return {"error": str(e)}, 404
+    try:
+        df = pd.read_csv(file)
+        trend = df['aqi'].tail(24).tolist() if 'aqi' in df else []
+        return {"trend": trend}
+    except Exception as e:
+        return {"error": f"Failed to process trend data: {e}"}, 500
 
 @app.get("/api/city/{city}/forecast")
 def get_city_forecast(city: str, range: str = Query("7d")) -> Dict[str, List[float]]:
-    file = get_latest_forecast_file(city)
-    with open(file, 'r') as f:
-        forecast = json.load(f)
-    # Return all by default; optionally filter by range
-    return {"forecast": forecast.get('aqi', list(forecast.values())[0] if forecast else [])}
+    # Robust error handling for missing forecast files
+    try:
+        file = get_latest_forecast_file(city)
+    except HTTPException as e:
+        return {"error": str(e.detail)}, e.status_code
+    except Exception as e:
+        return {"error": str(e)}, 404
+    try:
+        with open(file, 'r') as f:
+            forecast = json.load(f)
+        # Return all by default; optionally filter by range
+        return {"forecast": forecast.get('aqi', list(forecast.values())[0] if forecast else [])}
+    except Exception as e:
+        return {"error": f"Failed to load forecast data: {e}"}, 500
 
 @app.get("/api/city/{city}/pollutants")
 def get_city_pollutants(city: str) -> Dict[str, float]:
-    file = get_latest_processed_file(city)
-    df = pd.read_csv(file)
-    latest = df.iloc[-1]
-    return {k: float(latest[k]) for k in ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co'] if k in latest}
+    try:
+        file = get_latest_processed_file(city)
+    except HTTPException as e:
+        return {"error": str(e.detail)}, e.status_code
+    except Exception as e:
+        return {"error": str(e)}, 404
+    try:
+        df = pd.read_csv(file)
+        latest = df.iloc[-1]
+        return {k: float(latest[k]) for k in ['pm2_5', 'pm10', 'o3', 'no2', 'so2', 'co'] if k in latest}
+    except Exception as e:
+        return {"error": f"Failed to process pollutants data: {e}"}, 500
 
 @app.get("/api/map/locations")
 def get_map_locations() -> List[Dict[str, Any]]:
     cities = get_available_cities()
     locations = []
     for city in cities:
-        file = get_latest_processed_file(city)
-        df = pd.read_csv(file)
-        latest = df.iloc[-1]
-        locations.append({
-            "city": city,
-            "lat": float(latest.get('lat', 0)),
-            "lng": float(latest.get('lon', 0)),
-            "aqi": float(latest.get('aqi', 0)),
-            "weather": latest.get('weather', ''),
-            "category": latest.get('aqi_category', '')
-        })
+        try:
+            file = get_latest_processed_file(city)
+            df = pd.read_csv(file)
+            latest = df.iloc[-1]
+            locations.append({
+                "city": city,
+                "lat": float(latest.get('lat', 0)),
+                "lng": float(latest.get('lon', 0)),
+                "aqi": float(latest.get('aqi', 0)),
+                "weather": latest.get('weather', ''),
+                "category": latest.get('aqi_category', '')
+            })
+        except HTTPException as e:
+            locations.append({"city": city, "error": str(e.detail)})
+        except Exception as e:
+            locations.append({"city": city, "error": str(e)})
     return locations
 
 @app.get("/api/city/{city}/historical")
-def get_historical(city: str, pollutant: str, time_range: str) -> Dict[str, Any]:
-    file = get_latest_processed_file(city)
-    df = pd.read_csv(file)
-    days = 7 if time_range == '7d' else 30 if time_range == '30d' else 90
-    df = df.tail(days)
-    if pollutant in df.columns:
-        data = df[pollutant].tolist()
-        return {
-            pollutant: data,
-            'dates': df['timestamp'].tolist() if 'timestamp' in df.columns else list(range(len(df)))
-        }
-    else:
-        return {
-            'dates': df['timestamp'].tolist() if 'timestamp' in df.columns else list(range(len(df)))
-        }
+def get_historical(city: str, pollutant: str, time_range: str):
+    # Accepts 'time_range' as query param for frontend compatibility
+    try:
+        file = get_latest_processed_file(city)
+    except HTTPException as e:
+        return {"error": str(e.detail)}, e.status_code
+    except Exception as e:
+        return {"error": str(e)}, 404
+    try:
+        df = pd.read_csv(file)
+        days = 7 if time_range == '7d' else 30 if time_range == '30d' else 90
+        df = df.tail(days)
+        if pollutant in df.columns:
+            data = df[pollutant].tolist()
+            return {
+                pollutant: data,
+                'dates': df['timestamp'].tolist() if 'timestamp' in df.columns else list(range(len(df)))
+            }
+        else:
+            return {
+                'dates': df['timestamp'].tolist() if 'timestamp' in df.columns else list(range(len(df)))
+            }
+    except Exception as e:
+        return {"error": f"Failed to process historical data: {e}"}, 500
 
 @app.post("/api/llm/query")
 def llm_query(query: Dict[str, str] = Body(...)) -> Dict[str, str]:
@@ -206,6 +253,8 @@ def export_dashboard() -> Dict[str, Any]:
                 "forecast": get_city_forecast(city),
                 "pollutants": get_city_pollutants(city)
             }
+        except HTTPException as e:
+            export_data["data"][city] = {"error": str(e.detail)}
         except Exception as e:
             export_data["data"][city] = {"error": str(e)}
     

@@ -1,0 +1,14 @@
+{
+  "city": "Delhi",
+  "timestamp": "20250719T104336Z",
+  "insights": {
+    "pm2_5": "3 high pm2_5 events in recent data.",
+    "pm2_5_trend": "Increasing trend in pm2_5",
+    "pm10": "3 high pm10 events in recent data.",
+    "pm10_trend": "Increasing trend in pm10",
+    "nitrogen_dioxide": "10 high nitrogen_dioxide events in recent data.",
+    "nitrogen_dioxide_trend": "Stable nitrogen_dioxide trend"
+  },
+  "llm_analysis": "LLM analysis not available",
+  "scenario_description": "What if traffic is reduced by 30%?"
+}
