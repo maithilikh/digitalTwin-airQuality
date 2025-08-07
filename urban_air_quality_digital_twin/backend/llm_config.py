@@ -67,4 +67,38 @@ MODEL_INFO = {
     "size": "~1GB",
     "license": "Apache 2.0",
     "paper": "https://arxiv.org/abs/2210.11416"
-} 
+}
+
+def query_huggingface_model(prompt: str) -> str:
+    """
+    Sends a prompt to the Hugging Face model and returns the generated response as a string.
+    """
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(HUGGINGFACE_MODEL_NAME)
+        model = AutoModelForSeq2SeqLM.from_pretrained(HUGGINGFACE_MODEL_NAME).to(DEVICE)
+        inputs = tokenizer(prompt, return_tensors="pt").to(DEVICE)
+        output_tokens = model.generate(
+            **inputs,
+            max_length=256,
+            temperature=0.1,
+            top_p=0.9,
+            repetition_penalty=1.1,
+            do_sample=True
+        )
+        response = tokenizer.decode(output_tokens[0], skip_special_tokens=True)
+        return response
+    except Exception as e:
+        print(f"Error querying Hugging Face model: {e}")
+        return "Sorry, there was an error generating a response."
+
+def parse_llm_response(response: str) -> dict:
+    """
+    Parses the LLM response string into a dictionary if possible, otherwise returns the raw text.
+    """
+    import json
+    try:
+        # Try to parse as JSON
+        return json.loads(response)
+    except Exception:
+        # Return as plain text if not JSON
+        return {"text": response}

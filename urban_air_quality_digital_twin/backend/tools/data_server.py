@@ -8,6 +8,8 @@ from fastapi import Query
 import httpx
 from typing import Optional
 
+
+
 # EPA AQI categories
 AQI_CATEGORIES = [
     (0, 50, 'Good'),
@@ -91,6 +93,7 @@ async def get_city_data(lat: float = Query(...), lng: float = Query(...)):
         print("AQI parse error:", e)
         aqi = 0
     category = get_aqi_category(aqi)
+    print(f"category: {category} for aqi: {aqi}")
     # Fetch weather from weather API
     weather = 'Unknown'
     try:
@@ -105,6 +108,8 @@ async def get_city_data(lat: float = Query(...), lng: float = Query(...)):
     return {
         "city": city or 'Unknown',
         "aqi": aqi,
+        "temp":temp,
+        "wind": wind,
         "weather": weather,
         "category": category
     }
