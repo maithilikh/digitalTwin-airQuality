@@ -84,6 +84,15 @@ const mockCityData = {
   }
 };
 
+const cityCoords: Record<string, { lat: number; lng: number }> = {
+  'New York': { lat: 40.7128, lng: -74.0060 },
+  'Los Angeles': { lat: 34.0522, lng: -118.2437 },
+  'Chicago': { lat: 41.8781, lng: -87.6298 },
+  'Miami': { lat: 25.7617, lng: -80.1918 },
+  'Seattle': { lat: 47.6062, lng: -122.3321 },
+  'Denver': { lat: 39.7392, lng: -104.9903 }
+};
+
 const getAQIColor = (aqi: number) => {
   if (aqi <= 50) return 'text-green-500 bg-green-50 border-green-200';
   if (aqi <= 100) return 'text-yellow-500 bg-yellow-50 border-yellow-200';
@@ -137,13 +146,14 @@ const Dashboard: React.FC = () => {
   const [aiResponse, setAiResponse] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentCityData, setCurrentCityData] = useState<any>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const currentCityData = mockCityData[selectedCity as keyof typeof mockCityData];
+  const currentCityData1 = mockCityData[selectedCity as keyof typeof mockCityData];
   const city1Data = mockCityData[compareCity1 as keyof typeof mockCityData];
   const city2Data = mockCityData[compareCity2 as keyof typeof mockCityData];
 
@@ -176,20 +186,33 @@ const Dashboard: React.FC = () => {
 
   const handleAiQuery = async () => {
     if (!aiQuery.trim()) return;
-    
+
     setIsAiLoading(true);
-    // Simulate API call to your backend model
-    setTimeout(() => {
-      setAiResponse(`Based on current air quality data, here's my analysis of "${aiQuery}": The air quality patterns show that pollution levels are influenced by traffic patterns, weather conditions, and industrial activity. For specific health recommendations, consider the current AQI level and adjust outdoor activities accordingly.`);
-      setIsAiLoading(false);
-    }, 2000);
+    setAiResponse('');
+    try {
+      const res = await fetch('/api/ask-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiQuery })
+      });
+      const data = await res.json();
+      // The backend returns { response: ... }
+      setAiResponse(
+        typeof data.response === 'string'
+          ? data.response
+          : data.response.text || JSON.stringify(data.response)
+      );
+    } catch (err) {
+      setAiResponse('Sorry, there was an error contacting the AI service.');
+    }
+    setIsAiLoading(false);
   };
 
   const handleExportData = () => {
     const exportData = {
       timestamp: new Date().toISOString(),
       selectedCity,
-      currentData: currentCityData,
+      currentData: currentCityData1,
       comparison: { city1: compareCity1, city2: compareCity2, data1: city1Data, data2: city2Data },
       mapLocation: markerData
     };
@@ -215,6 +238,27 @@ const Dashboard: React.FC = () => {
     ],
     trend: "Pollution levels are expected to decrease by 15% over the next 24 hours due to incoming wind patterns."
   };
+
+  useEffect(() => {
+    async function fetchCityData() {
+      setCurrentCityData(null); // Optional: show loading state
+      const coords = cityCoords[selectedCity];
+      if (!coords) return;
+      const res = await fetch(`/api/get-city-data?lat=${coords.lat}&lng=${coords.lng}`);
+      const data = await res.json();
+      setCurrentCityData(data);
+    }
+    fetchCityData();
+  }, [selectedCity]);
+
+  // Before your main return statement, add:
+  if (!currentCityData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span>Loading current city data...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
@@ -365,14 +409,14 @@ const Dashboard: React.FC = () => {
                         <Thermometer className="w-4 h-4 text-orange-500" />
                         <span className="text-sm text-gray-600">Temperature</span>
                       </div>
-                      <div className="text-xl font-semibold">{currentCityData.temperature}°C</div>
+                      <div className="text-xl font-semibold">{currentCityData.temp}°C</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-2 mb-2">
                         <Droplets className="w-4 h-4 text-blue-500" />
                         <span className="text-sm text-gray-600">Humidity</span>
                       </div>
-                      <div className="text-xl font-semibold">{currentCityData.humidity}%</div>
+                      <div className="text-xl font-semibold">{currentCityData.wind}%</div>
                     </div>
                   </div>
                 </div>
@@ -384,7 +428,7 @@ const Dashboard: React.FC = () => {
                         <Wind className="w-4 h-4 text-green-500" />
                         <span className="text-sm text-gray-600">Wind Speed</span>
                       </div>
-                      <div className="text-xl font-semibold">{currentCityData.windSpeed} m/s</div>
+                      <div className="text-xl font-semibold">{currentCityData.wind} m/s</div>
                     </div>
                   </div>
 
@@ -392,17 +436,13 @@ const Dashboard: React.FC = () => {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm text-gray-600">24h Trend</span>
                       <div className="flex items-center space-x-1">
-                        {currentCityData.trend[8] > currentCityData.trend[0] ? (
-                          <TrendingUp className="w-4 h-4 text-red-500" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-green-500" />
-                        )}
+                       
                         <span className="text-sm font-medium">
-                          {Math.abs(currentCityData.trend[8] - currentCityData.trend[0])}
+                         
                         </span>
                       </div>
                     </div>
-                    <TrendChart data={currentCityData.trend} color="blue" />
+                    
                   </div>
                 </div>
               </div>
