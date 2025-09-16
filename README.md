@@ -1,4 +1,4 @@
-# Urban Air Quality Digital Twin [WIP]
+# Urban Air Quality Digital Twin
 
 ## Overview
 
