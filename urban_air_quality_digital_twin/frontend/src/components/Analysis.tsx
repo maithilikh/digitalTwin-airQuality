@@ -357,7 +357,8 @@ const Analysis: React.FC = () => {
                   type="scenario"
                   title="AI Scenario Analysis"
                   icon={Brain}
-                  context={{ params: analyzedScenarioParams }}
+                  context={{ city: selectedCity,
+                    params: analyzedScenarioParams }}
                   auto={false}
                   trigger={scenarioAnalysisTrigger}
                 />
